@@ -1,8 +1,8 @@
-# Semantic Event Discovery
+# Mood
 
-Intent-aware semantic search for Delhi events. Natural language queries, not keywords.
+Intent-aware search for Delhi events. Tell it your vibe — it finds what you actually mean.
 
-> Built to show what District's search could be — "something fun to do alone at night 2am" should return late-night solo events, not a water park.
+> "something fun to do alone at night 2am" should return late-night solo events, not a water park.
 
 <table>
 <tr>
