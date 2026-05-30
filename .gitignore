@@ -1,3 +1,31 @@
+# secrets
+.env
+.env.local
+
+# python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# qdrant local storage
+qdrant_storage/
+qdrant_data/
+
+# os
+.DS_Store
+
+# ide
+.vscode/
+.idea/
+
+# demo doc (not for public repo)
 implementation_readme.md
-venv
 

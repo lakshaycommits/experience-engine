@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semantic Event Discovery</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f6f7fb;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      padding: 20px 0 0 0;
+    }
+    .header-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 20px 24px;
+    }
+    .header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #111;
+    }
+    .header p {
+      font-size: 0.9rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    /* ── Search bar ── */
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+      background: #fafafa;
+    }
+    .search-bar input:focus {
+      border-color: #4f46e5;
+      background: #fff;
+    }
+    .search-bar button {
+      padding: 12px 22px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .search-bar button:hover { background: #4338ca; }
+    .search-bar button:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    /* ── Demo pills ── */
+    .demo-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+      padding-bottom: 4px;
+    }
+    .demo-pill {
+      background: #f0f0f8;
+      color: #4f46e5;
+      border: 1px solid #ddd9ff;
+      border-radius: 20px;
+      padding: 5px 13px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-weight: 500;
+    }
+    .demo-pill:hover { background: #e0deff; }
+
+    /* ── Main content ── */
+    .main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 24px 24px 60px 24px;
+    }
+
+    /* ── Intent box ── */
+    .intent-box {
+      background: #fff;
+      border: 1px solid #ddd9ff;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+    }
+    .intent-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      font-size: 0.85rem;
+    }
+    .intent-field { display: flex; align-items: center; gap: 6px; }
+    .intent-label {
+      font-weight: 600;
+      color: #4f46e5;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .intent-value { color: #333; }
+    .intent-rewritten {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+      font-size: 0.82rem;
+      color: #666;
+      font-style: italic;
+    }
+    .intent-rewritten span { color: #4f46e5; font-style: normal; font-weight: 500; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex;
+      gap: 20px;
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 16px;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .stats-bar b { color: #333; }
+
+    /* ── Cards grid ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 600px) { .cards-grid { grid-template-columns: 1fr; } }
+
+    /* ── Event card ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e8e8e8;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      transition: box-shadow 0.2s, transform 0.15s;
+      position: relative;
+    }
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+      transform: translateY(-1px);
+    }
+    .card-score {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: #f3f4f6;
+      color: #6b7280;
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .card-title {
+      font-size: 0.97rem;
+      font-weight: 700;
+      color: #111;
+      padding-right: 52px;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .card-venue {
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.78rem;
+      color: #555;
+      margin-bottom: 10px;
+    }
+    .card-meta-item { display: flex; align-items: center; gap: 3px; }
+
+    /* ── Tags ── */
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+    .tag {
+      background: #f0f4ff;
+      color: #3a6bff;
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    .tag-night  { background: #1a1a2e; color: #a0aaff; }
+    .tag-morning{ background: #fff3e0; color: #e65100; }
+    .tag-chill  { background: #e8f5e9; color: #2e7d32; }
+    .tag-party  { background: #fce4ec; color: #c62828; }
+
+    /* ── Match reason ── */
+    .match-reason {
+      border-left: 3px solid #22c55e;
+      background: #f0fdf4;
+      padding: 6px 10px;
+      font-size: 0.76rem;
+      color: #166534;
+      border-radius: 0 6px 6px 0;
+    }
+
+    /* ── Price tier colors ── */
+    .price-free    { color: #16a34a; font-weight: 600; }
+    .price-budget  { color: #2563eb; }
+    .price-mid     { color: #d97706; }
+    .price-premium { color: #dc2626; }
+
+    /* ── Landing state ── */
+    .landing {
+      text-align: center;
+      padding: 48px 0 24px;
+    }
+    .landing h2 { font-size: 1.1rem; color: #555; font-weight: 500; margin-bottom: 24px; }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+      text-align: left;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .comparison-table th {
+      background: #f8f8fc;
+      padding: 10px 14px;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 1px solid #eee;
+    }
+    .comparison-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .col-bad  { color: #dc2626; }
+    .col-good { color: #16a34a; font-weight: 500; }
+    .query-mono { font-family: monospace; font-size: 0.8rem; color: #4f46e5; }
+
+    /* ── Spinner ── */
+    .spinner-wrap { text-align: center; padding: 40px 0; color: #888; font-size: 0.9rem; }
+    .spinner {
+      display: inline-block;
+      width: 22px; height: 22px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #4f46e5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ── */
+    .error-box {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: #b91c1c;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef } = React;
+
+const API_URL = "http://localhost:8000";
+
+const DEMO_QUERIES = [
+  "something fun to do alone at night 2am",
+  "first date idea under 1500 rupees",
+  "like NH7 Weekender but in Delhi",
+  "chill Sunday morning activity",
+];
+
+const TIME_ICON = {
+  morning: "🌅", afternoon: "☀️", evening: "🌆", late_night: "🌙", any: "🕐",
+};
+const SOCIAL_ICON = {
+  solo: "🧍", couple: "👫", group: "👥", family: "👨‍👩‍👧", any: "👤",
+};
+const ENERGY_ICON = { low: "🟢", medium: "🟡", high: "🔴" };
+const INDOOR_ICON = { indoor: "🏠", outdoor: "🌳", both: "🏠🌳" };
+const PRICE_CLASS = { free: "price-free", budget: "price-budget", mid: "price-mid", premium: "price-premium" };
+
+function tagClass(text) {
+  const t = text.toLowerCase();
+  if (["night","late","midnight","dark"].some(k => t.includes(k))) return "tag tag-night";
+  if (["morning","sunrise","early"].some(k => t.includes(k))) return "tag tag-morning";
+  if (["chill","relax","calm","peaceful","lazy"].some(k => t.includes(k))) return "tag tag-chill";
+  if (["party","dance","rave","fun"].some(k => t.includes(k))) return "tag tag-party";
+  return "tag";
+}
+
+function IntentBox({ intent }) {
+  const tc = intent.temporal_context;
+  const timeIcon = TIME_ICON[tc.time_of_day] ?? "🕐";
+  const socialIcon = SOCIAL_ICON[intent.social_context] ?? "👤";
+  const vibe = (intent.vibe ?? []).slice(0, 5).join(", ") || "—";
+
+  return (
+    <div className="intent-box">
+      <div className="intent-row">
+        <div className="intent-field">
+          <span className="intent-label">Time</span>
+          <span className="intent-value">{timeIcon} {tc.time_of_day.replace("_", " ")}</span>
+        </div>
+        <div className="intent-field">
+          <span className="intent-label">Social</span>
+          <span className="intent-value">{socialIcon} {intent.social_context}</span>
+        </div>
+        <div className="intent-field">
+          <span className="intent-label">Vibe</span>
+          <span className="intent-value">🎭 {vibe}</span>
+        </div>
+        {tc.day_type !== "any" && (
+          <div className="intent-field">
+            <span className="intent-label">Day</span>
+            <span className="intent-value">📅 {tc.day_type}</span>
+          </div>
+        )}
+      </div>
+      {intent.rewritten_query && (
+        <div className="intent-rewritten">
+          → <span>{intent.rewritten_query}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventCard({ event }) {
+  const timeStr = event.end_time
+    ? `${event.time} – ${event.end_time}`
+    : event.time;
+
+  const priceDisplay = event.price_max === 0
+    ? "Free"
+    : `₹${event.price_min}–${event.price_max}`;
+
+  const priceCls = PRICE_CLASS[event.price_tier] ?? "";
+
+  return (
+    <div className="card">
+      <span className="card-score">{(event.score ?? 0).toFixed(3)}</span>
+      <div className="card-title">{event.title}</div>
+      <div className="card-venue">📍 {event.venue}, {event.area}</div>
+
+      <div className="card-meta">
+        {timeStr && <span className="card-meta-item">🕐 {timeStr}</span>}
+        <span className={`card-meta-item ${priceCls}`}>
+          💰 {priceDisplay}
+        </span>
+        {event.energy_level && (
+          <span className="card-meta-item">
+            {ENERGY_ICON[event.energy_level] ?? "⚪"} {event.energy_level}
+          </span>
+        )}
+        {event.indoor_outdoor && (
+          <span className="card-meta-item">
+            {INDOOR_ICON[event.indoor_outdoor] ?? ""} {event.indoor_outdoor}
+          </span>
+        )}
+      </div>
+
+      {event.vibe_tags?.length > 0 && (
+        <div className="tags">
+          {event.vibe_tags.slice(0, 6).map(t => (
+            <span key={t} className={tagClass(t)}>{t}</span>
+          ))}
+        </div>
+      )}
+
+      {event.match_reason && (
+        <div className="match-reason">✦ {event.match_reason}</div>
+      )}
+    </div>
+  );
+}
+
+function Landing() {
+  const rows = [
+    {
+      q: "something fun to do alone at night 2am",
+      bad: "Water park (closed), clothing brands",
+      good: "Karaoke Night, Gaming Café, Midnight Cycling",
+    },
+    {
+      q: "first date idea under 1500 rupees",
+      bad: "Random keyword matches",
+      good: "Pottery class, Wine tasting, Rooftop cinema",
+    },
+    {
+      q: "like NH7 Weekender but in Delhi",
+      bad: "Nothing useful",
+      good: "When Chai Met Toast, Delhi Indie Fest",
+    },
+    {
+      q: "chill Sunday morning activity",
+      bad: "Irrelevant keyword hits",
+      good: "Yoga, Farmers Market, Sound Bath",
+    },
+  ];
+
+  return (
+    <div className="landing">
+      <h2>Type a query above or pick a demo — this is what changes.</h2>
+      <table className="comparison-table">
+        <thead>
+          <tr>
+            <th>Query</th>
+            <th>District returns</th>
+            <th>This returns</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.q}>
+              <td><span className="query-mono">{r.q}</span></td>
+              <td className="col-bad">✗ {r.bad}</td>
+              <td className="col-good">✓ {r.good}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function App() {
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const inputRef = useRef(null);
+
+  async function search(q) {
+    const text = (q ?? query).trim();
+    if (!text) return;
+    setLoading(true);
+    setError(null);
+    setData(null);
+    try {
+      const res = await fetch(`${API_URL}/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, limit: 8 }),
+      });
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+      setData(await res.json());
+    } catch (e) {
+      setError(`Could not reach the API at ${API_URL}. Make sure the API is running (uvicorn api.main:app --reload).`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handlePill(q) {
+    setQuery(q);
+    inputRef.current?.focus();
+    search(q);
+  }
+
+  function handleKey(e) {
+    if (e.key === "Enter") search();
+  }
+
+  return (
+    <>
+      <div className="header">
+        <div className="header-inner">
+          <h1>🔍 Semantic Event Discovery</h1>
+          <p>Intent-aware search for Delhi events — natural language, not keywords.</p>
+
+          <div className="search-bar">
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="e.g. something fun to do alone at night 2am"
+            />
+            <button onClick={() => search()} disabled={loading}>
+              {loading ? "Searching…" : "Search"}
+            </button>
+          </div>
+
+          <div className="demo-pills">
+            {DEMO_QUERIES.map(q => (
+              <span key={q} className="demo-pill" onClick={() => handlePill(q)}>{q}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="main">
+        {loading && (
+          <div className="spinner-wrap">
+            <div className="spinner"></div>
+            <div>Parsing intent and searching…</div>
+          </div>
+        )}
+
+        {error && <div className="error-box">⚠️ {error}</div>}
+
+        {data && !loading && (
+          <>
+            <IntentBox intent={data.intent_parsed} />
+
+            <div className="stats-bar">
+              <span><b>{data.results.length}</b> results shown</span>
+              <span><b>{data.total_candidates}</b> candidates retrieved</span>
+            </div>
+
+            {data.results.length === 0 ? (
+              <div style={{ color: "#888", fontSize: "0.9rem", padding: "20px 0" }}>
+                No results found. Try broadening your query.
+              </div>
+            ) : (
+              <div className="cards-grid">
+                {data.results.map((r, i) => (
+                  <EventCard key={r.id || i} event={r} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {!data && !loading && !error && <Landing />}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
